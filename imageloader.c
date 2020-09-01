@@ -7,7 +7,7 @@
 ** AUTHOR:      Dan Garcia  -  University of California at Berkeley
 **              Copyright (C) Dan Garcia, 2020. All rights reserved.
 **              Justin Yokota - Starter Code
-**				YOUR NAME HERE
+**				Brian Park
 **
 **
 ** DATE:        2020-08-15
