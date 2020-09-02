@@ -37,14 +37,12 @@ Image *readData(char *filename) {
     img = (Image *) malloc(sizeof(struct Image));
     
     char ft[2];
-    uint32_t cols, rows;
+    uint32_t cols;
+    uint32_t rows;
    
     fscanf(fp, "%s", ft);
-    fscanf(fp, "%hhu %hhu", &cols, &rows);
+    fscanf(fp, "%u %u", &cols, &rows);
     fscanf(fp, "%*d");
-    
-    img->rows = (uint32_t*) malloc(sizeof(uint32_t));
-    img->cols = (uint32_t*) malloc(sizeof(uint32_t));
 
     img->rows = rows;
     img->cols = cols;
@@ -54,7 +52,7 @@ Image *readData(char *filename) {
     int i;
     int size_r = (int) rows;
     int size_c = (int) cols;
-    
+
     Color **color_arr = (Color **) malloc(sizeof(Color*) * size_r);
 
     if (color_arr == NULL) {
@@ -65,7 +63,7 @@ Image *readData(char *filename) {
     *color_arr = (Color*) malloc(sizeof(Color) * size_r * size_c);
 
     for (i = 0; i < size_r; i++) {
-        color_arr[i] = (*color_arr + size_r*i);
+        color_arr[i] = (*color_arr + size_c*i);
     }
     
     for (int i = 0; i < size_r; i++) {
@@ -83,29 +81,28 @@ Image *readData(char *filename) {
 
 //Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
 void writeData(Image *image) {
+    
+    uint32_t rows = (uint32_t) image->rows;
+    uint32_t cols = (uint32_t) image->cols;
 
-	printf("P3\n");
-    printf("%hhu %hhu\n", &image->rows, &image->cols);
+    printf("P3\n");
+    printf("%hhu %hhu\n", image->rows, image->cols);
     printf("255\n");
 
-    int r = (int) image->rows;
-    int c = (int) image->cols;
-
-    for (int i = 0; i < r; i++) {
-        for (int j = 0; j < c; j++) {
-            printf("%hhu %hhu %hhu", image->image[i][j].R, image->image[i][j].G, image->image[i][j].B);
-            printf("   ");
+    for (uint32_t i = 0; i < rows; i++) {
+        for (uint32_t j = 0; j < cols; j++) {
+            printf("%3hhu %3hhu %3hhu", (uint8_t) image->image[i][j].R, (uint8_t) image->image[i][j].G, (uint8_t) image->image[i][j].B);
+            
+            if (j < image->cols - 1) {
+                printf("   ");
+            }
         }
         printf("\n");
-    }
-    
+    }    
 }
 
 //Frees an image
-void freeImage(Image *image)
-{
-	//YOUR CODE HERE
-
+void freeImage(Image *image) {
     free(image->image);
-    free(image);
+    free(image);    
 }
