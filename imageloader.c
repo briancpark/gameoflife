@@ -33,73 +33,79 @@ Image *readData(char *filename) {
         return 0;
     }
 
-    struct Image *img;
-    img = malloc(sizeof(struct Image));
+    Image *img;
+    img = (Image *) malloc(sizeof(struct Image));
     
-    char ft[2];   //Leave it as an arbitrary number for now (file type)
-    uint32_t *cols, *rows;
-    uint8_t *scale = (uint8_t*) malloc(sizeof(uint8_t));
+    char ft[2];
+    uint32_t cols, rows;
    
-    fscanf(fp, "%s\n", ft);
-    fscanf(fp, "%"SCNu32 "%"SCNu32"\n", &cols, &rows);
-    fscanf(fp, "%" SCNu8 "\n", &scale);
+    fscanf(fp, "%s", ft);
+    fscanf(fp, "%hhu %hhu", &cols, &rows);
+    fscanf(fp, "%*d");
+    
+    img->rows = (uint32_t*) malloc(sizeof(uint32_t));
+    img->cols = (uint32_t*) malloc(sizeof(uint32_t));
+
     img->rows = rows;
     img->cols = cols;
 
-    struct Color color_arr**;
-    *color_arr = malloc(sizeof(struct Color*) * &rows);
-    for (int i = 0; i < (int) rows; i++) {
-        color_arr[i] = malloc(sizeof(struct Color*) * cols);
-    }
-   
+    //Dynamically allocate an array of struct
 
-    for (uint32_t i = 0; i < rows; i++) {
-        for (uint32_t j = 0; j < cols; j++) {
-            fscanf(fp, "%" SCNu8 "%" SCNu8 "%" SCNu8, &color_arr[i][j].image.R, &color_arr[i][j].image.G, &color_arr[i][j].image.B);
-            
+    int i;
+    int size_r = (int) rows;
+    int size_c = (int) cols;
+    
+    Color **color_arr = (Color **) malloc(sizeof(Color*) * size_r);
 
-        }
-        fscanf(fp, "\n");
+    if (color_arr == NULL) {
+        printf("out of memory");
+        return 0;
     }
 
-    /*    
-    for (uint32_t i = 0; i < rows; i++) {
-        for (uint32_t j = 0; j < cols; j++) {
-            uint8_t *r = (uint8_t*) malloc(sizeof(uint8_t)); 
-            uint8_t *g = (uint8_t*) malloc(sizeof(uint8_t));
-            uint8_t *b = (uint8_t*) malloc(sizeof(uint8_t));
-         
-            fscanf(fp, "%"SCNu32 "%"SCNu32 "%"SCNu32, &r, &g, &b);
-            *(color->image + i + j) = &color;
+    *color_arr = (Color*) malloc(sizeof(Color) * size_r * size_c);
 
-            free(r);
-            free(g);
-            free(b);
+    for (i = 0; i < size_r; i++) {
+        color_arr[i] = (*color_arr + size_r*i);
+    }
+    
+    for (int i = 0; i < size_r; i++) {
+        for (int j = 0; j < size_c; j++) {
+            fscanf(fp, "%hhu %hhu %hhu", &color_arr[i][j].R, &color_arr[i][j].G, &color_arr[i][j].B);
         }
     }
-    */
+
     fclose(fp);
+    
+    img->image = color_arr; 
+
     return img;
 }
 
 //Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
 void writeData(Image *image) {
-/*
+
 	printf("P3\n");
-    printf("%u %u\n", &image->rows, &image->cols);
+    printf("%hhu %hhu\n", &image->rows, &image->cols);
     printf("255\n");
-    for (int i = 0; i < image->rows; i++) {
-        for (int j = 0; j < image->cols; j++) {
-            printf("0");
+
+    int r = (int) image->rows;
+    int c = (int) image->cols;
+
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            printf("%hhu %hhu %hhu", image->image[i][j].R, image->image[i][j].G, image->image[i][j].B);
+            printf("   ");
         }
         printf("\n");
     }
-    */
+    
 }
 
 //Frees an image
 void freeImage(Image *image)
 {
 	//YOUR CODE HERE
+
+    free(image->image);
     free(image);
 }
