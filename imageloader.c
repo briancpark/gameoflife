@@ -47,25 +47,15 @@ Image *readData(char *filename) {
     img->rows = rows;
     img->cols = cols;
 
-    //Dynamically allocate an array of struct
-
-    int i;
     int size_r = (int) rows;
     int size_c = (int) cols;
 
-    Color **color_arr = (Color **) malloc(sizeof(Color*) * size_r);
+    Color** color_arr;  
+    color_arr = (Color **) malloc(sizeof(Color*) * size_r);  
+    for (int i = 0; i < size_r; i++) {
+       color_arr[i] = (Color*) malloc(sizeof(double) * size_c);  
+   	}
 
-    if (color_arr == NULL) {
-        printf("out of memory");
-        return 0;
-    }
-
-    *color_arr = (Color*) malloc(sizeof(Color) * size_r * size_c);
-
-    for (i = 0; i < size_r; i++) {
-        color_arr[i] = (*color_arr + size_c*i);
-    }
-    
     for (int i = 0; i < size_r; i++) {
         for (int j = 0; j < size_c; j++) {
             fscanf(fp, "%hhu %hhu %hhu", &color_arr[i][j].R, &color_arr[i][j].G, &color_arr[i][j].B);
@@ -103,6 +93,10 @@ void writeData(Image *image) {
 
 //Frees an image
 void freeImage(Image *image) {
-    free(image->image);
-    free(image);    
+	for (int i = 0; i < image->rows; i++) {
+		free(image->image[i]);
+	}
+
+    free(image->image); 
+    free(image);   
 }
