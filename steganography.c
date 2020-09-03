@@ -39,24 +39,17 @@ Color *evaluateOnePixel(Image *image, int row, int col) {
 //Given an image, creates a new image extracting the LSB of the B channel.
 Image *steganography(Image *image) {
     
-    Color** color_arr;
-    color_arr = (Color **) malloc(sizeof(Color*) * image->rows);
-    for (int i = 0; i < image->rows; i++) {
-        color_arr[i] = (Color*) malloc(sizeof(double) * image->cols);
-    }
-
     for (int i = 0; i < image->rows; i++) {
         for (int j = 0; j < image->cols; j++) {
             Color *color;
             color = evaluateOnePixel(image, i, j);
-            color_arr[i][j].R = color->R;
-            color_arr[i][j].G = color->G;
-            color_arr[i][j].B = color->B;
+            image->image[i][j].R = color->R;
+            image->image[i][j].G = color->G;
+            image->image[i][j].B = color->B;
+
+            free(color);
         }
     }
-
-    image->image = color_arr;
-
     return image;
 }
 
@@ -84,12 +77,10 @@ int main(int argc, char **argv) {
     }
     
     char *filename = argv[1];
-
     image = readData(filename);
     image = steganography(image);
     writeData(image);
     freeImage(image);
 
-    
     return 0;
 }
