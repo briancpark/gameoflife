@@ -17,39 +17,102 @@
 #include <inttypes.h>
 #include "imageloader.h"
 
+//My custom modulo function
+int mod (int n, int m) {
+    if (n < 0) {
+        return n + m;
+    } else {
+        return n % m;
+    }
+}
+
 //Determines what color the cell at the given row/col should be. This function allocates space for a new Color.
 //Note that you will need to read the eight neighbors of the cell in question. The grid "wraps", so we treat the top row as adjacent to the bottom row
 //and the left column as adjacent to the right column.
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
     
     Color *color = (Color*) malloc(sizeof(struct Color));
+
+    color->R = 0;
+    color->G = 0;
+    color->B = 0;
     
     uint32_t alive = rule >> 9;
     uint32_t dead = rule & 511;
 
-    for () {
-    
+    for (int i = 8; i >= 0; i--) {
+        int neighbors = 0;
+
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
+        
+        if (((color->R >> i) & 1) == 1 && (alive >> neighbors) & 1) {
+            color->R = color->R & (1 << i);
+        }
+
+        if (((color->R >> i) & 0) == 0 && (dead >> neighbors) & 1) {
+            color->R = color->R & (1 << i);
+        }
+
     }
 
 
-    for (int i = 0; i < 9; i++) {
-         if (alive >> i & 1) {
-            
-         }
-    
+
+    //Green
+
+    for (int i = 8; i >= 0; i--) {
+        int neighbors = 0;
+
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
+        
+        if (((color->G >> i) & 1) == 1 && (alive >> neighbors) & 1) {
+            color->G = color->G & (1 << i);
+        }
+
+        if (((color->G >> i) & 0) == 0 && (dead >> neighbors) & 1) {
+            color->G = color->G & (1 << i);
+        }
+
     }
 
 
-    image->image[mod(i - 1, i)][mod(j - 1 , j)].R;
-    image->image[mod(i, i)][mod(j - 1, j)].R;
-    image->image[mod(i + 1, i)][mod(j - 1, j)].R;
-    image->image[mod(i - 1, i)][mod(j, j)].R;
-    image->image[mod(i + 1, i)][mod(j, j)].R;
-    image->image[mod(i - 1, i)][mod(j + 1, j)].R;
-    image->image[mod(i, i)][mod(j + 1, j)].R;
-    image->image[mod(i + 1, i)][mod(j + 1, j)].R;
-    
-    
+    //BLUE
+
+
+    for (int i = 8; i >= 0; i--) {
+        int neighbors = 0;
+
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
+        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
+        
+        if (((color->B >> i) & 1) == 1 && (alive >> neighbors) & 1) {
+            color->B = color->B & (1 << i);
+        }
+
+        if (((color->B >> i) & 0) == 0 && (dead >> neighbors) & 1) {
+            color->B = color->B & (1 << i);
+        }
+
+    }
 
 
 
@@ -109,13 +172,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-//My custom modulo function
-int mod (int n, int m) {
-    if (n < 0) {
-        return n + m % m;
-    } else {
-        return n % m;
-    }
-}
-
