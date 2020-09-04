@@ -23,6 +23,11 @@ Color *evaluateOnePixel(Image *image, int row, int col) {
     
     Color *color = (Color *) malloc(sizeof(struct Color));
 
+    if (color == NULL) {
+        printf("Memory allocation failed.");
+        exit(-1);
+    }
+
     if (image->image[row][col].B & 1) {
         color->R = 255;
         color->G = 255;

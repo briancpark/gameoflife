@@ -121,8 +121,17 @@ Image *life(Image *image, uint32_t rule) {
     Color** color_arr;
     color_arr = (Color**) malloc(sizeof(Color*) * new_image->rows);
 
+    if (color_arr == NULL) {
+        printf("Memory allocation failed.");
+        exit(-1);
+    }
+
     for (int i = 0; i < new_image->rows; i++) {
         color_arr[i] = (Color*) malloc(sizeof(double) * image->cols);
+        if (color_arr[i] == NULL) {
+            printf("Memory allocation failed.");
+            exit(-1);
+        }
     }
 
     for (int i = 0; i < image->rows; i++) {
@@ -163,7 +172,7 @@ int main(int argc, char **argv) {
     Image *image;
 
     if (argc != 3) {
-        //printf();
+        printf("Incorrect number of arguments");
         exit(-1);
     }
 

@@ -30,12 +30,17 @@ Image *readData(char *filename) {
     if (fp == NULL) {
         printf("File doesn't exist. Exit with code 0");
         fclose(fp);
-        return 0;
+        exit(-1);
     }
 
     Image *img;
     img = (Image *) malloc(sizeof(struct Image));
     
+    if (img == NULL) {
+        exit(-1);
+    }
+
+
     char ft[2];
     uint32_t cols;
     uint32_t rows;
@@ -52,8 +57,17 @@ Image *readData(char *filename) {
 
     Color** color_arr;  
     color_arr = (Color **) malloc(sizeof(Color*) * size_r);  
+
+    if (color_arr == NULL) {
+        exit(-1);
+    }
+
     for (int i = 0; i < size_r; i++) {
        color_arr[i] = (Color*) malloc(sizeof(double) * size_c);  
+
+        if (color_arr[i] == NULL) {
+            exit(-1);
+        }
    	}
 
     for (int i = 0; i < size_r; i++) {
