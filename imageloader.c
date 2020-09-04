@@ -76,7 +76,7 @@ void writeData(Image *image) {
     uint32_t cols = (uint32_t) image->cols;
 
     printf("P3\n");
-    printf("%hhu %hhu\n", image->rows, image->cols);
+    printf("%hhu %hhu\n", image->cols, image->rows);
     printf("255\n");
 
     for (uint32_t i = 0; i < rows; i++) {
