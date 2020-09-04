@@ -59,13 +59,9 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         if (((color->R >> i) & 0) == 0 && (dead >> neighbors) & 1) {
             color->R = color->R & (1 << i);
         }
-
     }
 
-
-
     //Green
-
     for (int i = 8; i >= 0; i--) {
         int neighbors = 0;
 
@@ -85,13 +81,9 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         if (((color->G >> i) & 0) == 0 && (dead >> neighbors) & 1) {
             color->G = color->G & (1 << i);
         }
-
     }
 
-
     //BLUE
-
-
     for (int i = 8; i >= 0; i--) {
         int neighbors = 0;
 
@@ -111,11 +103,7 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         if (((color->B >> i) & 0) == 0 && (dead >> neighbors) & 1) {
             color->B = color->B & (1 << i);
         }
-
     }
-
-
-
 
     return color;
 }
@@ -123,7 +111,7 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 //You should be able to copy most of this from steganography.c
 Image *life(Image *image, uint32_t rule) {
-	for (int i = 0; image->rows; i++) {
+	for (int i = 0; i < image->rows; i++) {
         for (int j = 0; j < image->cols; j++) {
             Color *color;
             color = evaluateOneCell(image, i, j, rule);
