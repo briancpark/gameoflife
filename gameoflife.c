@@ -43,14 +43,14 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
     for (int i = 8; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].R >> i & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
         
         if (((color->R >> i) & 1) == 1 && (alive >> neighbors) & 1) {
             color->R = color->R & (1 << i);
@@ -65,14 +65,14 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
     for (int i = 8; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].G >> i & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
         
         if (((color->G >> i) & 1) == 1 && (alive >> neighbors) & 1) {
             color->G = color->G & (1 << i);
@@ -87,14 +87,14 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
     for (int i = 8; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
-        neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].B >> i & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col - 1, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
+        (neighbors += image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
         
         if (((color->B >> i) & 1) == 1 && (alive >> neighbors) & 1) {
             color->B = color->B & (1 << i);
