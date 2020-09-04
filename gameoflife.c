@@ -40,7 +40,7 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
     uint32_t alive = rule >> 9;
     uint32_t dead = rule & 511;
 
-    for (int i = 8; i >= 0; i--) {
+    for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
         neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].R >> i) & 1;
@@ -52,17 +52,17 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
         neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
         
-        if (((color->R >> i) & 1) == 1 && (alive >> neighbors) & 1) {
-            color->R = color->R & (1 << i);
+        if (((image->image[row][col].R >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            color->R = color->R | (1 << i);
         }
 
-        if (((color->R >> i) & 0) == 0 && (dead >> neighbors) & 1) {
-            color->R = color->R & (1 << i);
+        if (((image->image[row][col].R >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            color->R = color->R | (1 << i);
         }
     }
 
     //Green
-    for (int i = 8; i >= 0; i--) {
+    for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
         neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].G >> i) & 1;
@@ -74,17 +74,17 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
         neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
         
-        if (((color->G >> i) & 1) == 1 && (alive >> neighbors) & 1) {
-            color->G = color->G & (1 << i);
+        if (((image->image[row][col].G >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            color->G = color->G | (1 << i);
         }
 
-        if (((color->G >> i) & 0) == 0 && (dead >> neighbors) & 1) {
-            color->G = color->G & (1 << i);
+        if (((image->image[row][col].G >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            color->G = color->G | (1 << i);
         }
     }
 
     //BLUE
-    for (int i = 8; i >= 0; i--) {
+    for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
         neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].B >> i) & 1;
@@ -96,12 +96,12 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
         neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
         neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
         
-        if (((color->B >> i) & 1) == 1 && (alive >> neighbors) & 1) {
-            color->B = color->B & (1 << i);
+        if (((image->image[row][col].B >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            color->B = color->B | (1 << i);
         }
 
-        if (((color->B >> i) & 0) == 0 && (dead >> neighbors) & 1) {
-            color->B = color->B & (1 << i);
+        if (((image->image[row][col].B >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            color->B = color->B | (1 << i);
         }
     }
 
@@ -111,18 +111,37 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 //You should be able to copy most of this from steganography.c
 Image *life(Image *image, uint32_t rule) {
-	for (int i = 0; i < image->rows; i++) {
+	
+    Image *new_image;
+    new_image = (Image *) malloc(sizeof(struct Image));
+
+    new_image->rows = image->rows;
+    new_image->cols = image->cols;
+    
+    Color** color_arr;
+    color_arr = (Color**) malloc(sizeof(Color*) * new_image->rows);
+
+    for (int i = 0; i < new_image->rows; i++) {
+        color_arr[i] = (Color*) malloc(sizeof(double) * image->cols);
+    }
+
+    for (int i = 0; i < image->rows; i++) {
         for (int j = 0; j < image->cols; j++) {
             Color *color;
             color = evaluateOneCell(image, i, j, rule);
-            image->image[i][j].R = color->R;
-            image->image[i][j].G = color->G;
-            image->image[i][j].B = color->B;
+            color_arr[i][j].R = color->R;
+            color_arr[i][j].G = color->G;
+            color_arr[i][j].B = color->B;
 
             free(color);
         }
     }
-    return image;
+    
+    new_image->image = color_arr;
+
+    freeImage(image);
+
+    return new_image;
 }
 
 /*
