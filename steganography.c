@@ -20,15 +20,10 @@
 
 //Determines what color the cell at the given row/col should be. This should not affect Image, and should allocate space for a new Color.
 Color *evaluateOnePixel(Image *image, int row, int col) {
-    
-    Color *color = (Color *) malloc(sizeof(struct Color));
+    Color **img = image->image;
+    Color *color = *(img + row * image->cols + col);
 
-    if (color == NULL) {
-        printf("Memory allocation failed.");
-        exit(-1);
-    }
-
-    if (image->image[row][col].B & 1) {
+    if (color->B & 1) {
         color->R = 255;
         color->G = 255;
         color->B = 255;
@@ -43,16 +38,10 @@ Color *evaluateOnePixel(Image *image, int row, int col) {
 
 //Given an image, creates a new image extracting the LSB of the B channel.
 Image *steganography(Image *image) {
-    
+    Color **img = image->image;
     for (int i = 0; i < image->rows; i++) {
         for (int j = 0; j < image->cols; j++) {
-            Color *color;
-            color = evaluateOnePixel(image, i, j);
-            image->image[i][j].R = color->R;
-            image->image[i][j].G = color->G;
-            image->image[i][j].B = color->B;
-
-            free(color);
+            *(img + i * image->cols + j) = evaluateOnePixel(image, i, j);
         }
     }
     return image;
