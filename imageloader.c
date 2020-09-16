@@ -28,75 +28,64 @@ Image *readData(char *filename) {
     
     //Do a file pointer null check here
     if (fp == NULL) {
-        printf("File doesn't exist. Exit with code 0");
+        printf("File doesn't exist. Exit with code -1");
         fclose(fp);
         exit(-1);
     }
 
     Image *img;
-    img = (Image *) malloc(sizeof(struct Image));
+    img = (Image*) malloc(sizeof(struct Image));  
     
     if (img == NULL) {
+        fclose(fp);
         exit(-1);
     }
-
 
     char ft[2];
-    uint32_t cols;
-    uint32_t rows;
-   
+
     fscanf(fp, "%s", ft);
-    fscanf(fp, "%u %u", &cols, &rows);
+    fscanf(fp, "%u %u", &img->cols, &img->rows);
     fscanf(fp, "%*d");
 
-    img->rows = rows;
-    img->cols = cols;
-
-    int size_r = (int) rows;
-    int size_c = (int) cols;
-
-    Color** color_arr;  
-    color_arr = (Color **) malloc(sizeof(Color*) * size_r);  
-
+    Color **color_arr = (Color**) malloc(sizeof(Color*) * img->rows * img->cols);
     if (color_arr == NULL) {
+        free(img);
+        printf("Memory allocation failed.");
         exit(-1);
     }
 
-    for (int i = 0; i < size_r; i++) {
-       color_arr[i] = (Color*) malloc(sizeof(double) * size_c);  
-
-        if (color_arr[i] == NULL) {
-            exit(-1);
-        }
-   	}
-
-    for (int i = 0; i < size_r; i++) {
-        for (int j = 0; j < size_c; j++) {
-            fscanf(fp, "%hhu %hhu %hhu", &color_arr[i][j].R, &color_arr[i][j].G, &color_arr[i][j].B);
+    for (uint32_t i = 0; i < img->rows; i++) {
+        for (uint32_t j = 0; j < img->cols; j++) {
+            Color *color = malloc(sizeof(Color));
+            if (color == NULL) {
+                free(img);
+                free(color_arr);
+                printf("Memory allocation failed.");
+                exit(-1);
+            }
+            fscanf(fp, "%hhu %hhu %hhu", &color->R, &color->G, &color->B);
+            *(color_arr + i * img->cols + j) = color;
         }
     }
 
     fclose(fp);
-    
-    img->image = color_arr; 
-
+    img->image = color_arr;
     return img;
 }
 
 //Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
 void writeData(Image *image) {
-    
-    uint32_t rows = (uint32_t) image->rows;
-    uint32_t cols = (uint32_t) image->cols;
-
     printf("P3\n");
     printf("%hhu %hhu\n", image->cols, image->rows);
     printf("255\n");
 
-    for (uint32_t i = 0; i < rows; i++) {
-        for (uint32_t j = 0; j < cols; j++) {
-            printf("%3hhu %3hhu %3hhu", (uint8_t) image->image[i][j].R, (uint8_t) image->image[i][j].G, (uint8_t) image->image[i][j].B);
-            
+    Color **img = image->image;
+
+    for (uint32_t i = 0; i < image->rows; i++) {
+        for (uint32_t j = 0; j < image->cols; j++) {
+            Color *color = *(img + i * image->cols + j);
+            printf("%3hhu %3hhu %3hhu", color->R, color->G, color->B);
+            free(color);
             if (j < image->cols - 1) {
                 printf("   ");
             }
@@ -107,10 +96,6 @@ void writeData(Image *image) {
 
 //Frees an image
 void freeImage(Image *image) {
-	for (int i = 0; i < image->rows; i++) {
-		free(image->image[i]);
-	}
-
-    free(image->image); 
+    free(image->image);
     free(image);   
 }
