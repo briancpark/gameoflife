@@ -29,7 +29,6 @@ Image *readData(char *filename) {
     //Do a file pointer null check here
     if (fp == NULL) {
         printf("File doesn't exist. Exit with code -1");
-        fclose(fp);
         exit(-1);
     }
 
