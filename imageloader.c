@@ -28,7 +28,7 @@ Image *readData(char *filename) {
     
     //Do a file pointer null check here
     if (fp == NULL) {
-        printf("File doesn't exist. Exit with code -1");
+        printf("File doesn't exist. Exit with code -1.\n");
         exit(-1);
     }
 
@@ -37,6 +37,7 @@ Image *readData(char *filename) {
     
     if (img == NULL) {
         fclose(fp);
+        printf("Memory allocation failed.\n");
         exit(-1);
     }
 
@@ -49,7 +50,8 @@ Image *readData(char *filename) {
     Color **color_arr = (Color**) malloc(sizeof(Color*) * img->rows * img->cols);
     if (color_arr == NULL) {
         free(img);
-        printf("Memory allocation failed.");
+        fclose(fp);
+        printf("Memory allocation failed.\n");
         exit(-1);
     }
 
@@ -59,7 +61,8 @@ Image *readData(char *filename) {
             if (color == NULL) {
                 free(img);
                 free(color_arr);
-                printf("Memory allocation failed.");
+                fclose(fp);
+                printf("Memory allocation failed.\n");
                 exit(-1);
             }
             fscanf(fp, "%hhu %hhu %hhu", &color->R, &color->G, &color->B);
@@ -84,7 +87,6 @@ void writeData(Image *image) {
         for (uint32_t j = 0; j < image->cols; j++) {
             Color *color = *(img + i * image->cols + j);
             printf("%3hhu %3hhu %3hhu", color->R, color->G, color->B);
-            free(color);
             if (j < image->cols - 1) {
                 printf("   ");
             }
@@ -95,6 +97,12 @@ void writeData(Image *image) {
 
 //Frees an image
 void freeImage(Image *image) {
+    for (uint32_t i = 0; i < image->rows; i++) {
+        for (uint32_t j = 0; j < image->cols; j++) {
+            Color *color = *(image->image + i * image->cols + j);
+            free(color);
+        }
+    }
     free(image->image);
     free(image);   
 }
