@@ -30,82 +30,86 @@ int mod (int n, int m) {
 //Note that you will need to read the eight neighbors of the cell in question. The grid "wraps", so we treat the top row as adjacent to the bottom row
 //and the left column as adjacent to the right column.
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule) {
-    
-    Color *color = (Color*) malloc(sizeof(struct Color));
 
-    color->R = 0;
-    color->G = 0;
-    color->B = 0;
-    
+    Color **img = image->image;
+    Color *new_color = (Color*) malloc(sizeof(struct Color));
+
+    if (new_color == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(-1);
+    }
+
+    new_color->R = 0;
+    new_color->G = 0;
+    new_color->B = 0;
+
     uint32_t alive = rule >> 9;
     uint32_t dead = rule & 511;
 
     for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col - 1, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].R >> i) & 1;
-        
-        if (((image->image[row][col].R >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
-            color->R = color->R | (1 << i);
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1 , image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->R >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->R >> i) & 1;
+
+        if ((((*(img + row * image->cols + col))->R >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            new_color->R = new_color->R | (1 << i);
         }
 
-        if (((image->image[row][col].R >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
-            color->R = color->R | (1 << i);
+        if ((((*(img + row * image->cols + col))->R >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            new_color->R = new_color->R | (1 << i);
         }
     }
 
-    //Green
     for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col - 1, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].G >> i) & 1;
-        
-        if (((image->image[row][col].G >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
-            color->G = color->G | (1 << i);
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1 , image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->G >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->G >> i) & 1;
+
+        if ((((*(img + row * image->cols + col))->G >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            new_color->G = new_color->G | (1 << i);
         }
 
-        if (((image->image[row][col].G >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
-            color->G = color->G | (1 << i);
+        if ((((*(img + row * image->cols + col))->G >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            new_color->G = new_color->G | (1 << i);
         }
     }
 
-    //BLUE
     for (int i = 7; i >= 0; i--) {
         int neighbors = 0;
 
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col - 1 , image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col - 1, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col - 1, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row - 1, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
-        neighbors += (image->image[mod(row + 1, image->rows)][mod(col + 1, image->cols)].B >> i) & 1;
-        
-        if (((image->image[row][col].B >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
-            color->B = color->B | (1 << i);
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1 , image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->B >> i) & 1;
+        neighbors += ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->B >> i) & 1;
+
+        if ((((*(img + row * image->cols + col))->B >> i) & 1) == 1 && ((alive >> neighbors) & 1) == 1) {
+            new_color->B = new_color->B | (1 << i);
         }
 
-        if (((image->image[row][col].B >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
-            color->B = color->B | (1 << i);
+        if ((((*(img + row * image->cols + col))->B >> i) & 1) == 0 && ((dead >> neighbors) & 1) == 1) {
+            new_color->B = new_color->B | (1 << i);
         }
     }
-
-    return color;
+    
+    return new_color;
 }
 
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
@@ -115,41 +119,31 @@ Image *life(Image *image, uint32_t rule) {
     Image *new_image;
     new_image = (Image *) malloc(sizeof(struct Image));
 
-    new_image->rows = image->rows;
-    new_image->cols = image->cols;
-    
-    Color** color_arr;
-    color_arr = (Color**) malloc(sizeof(Color*) * new_image->rows);
-
-    if (color_arr == NULL) {
-        printf("Memory allocation failed.");
+    if (new_image == NULL) {
+        printf("Memory allocation failed.\n");
+        freeImage(image);
         exit(-1);
     }
 
-    for (int i = 0; i < new_image->rows; i++) {
-        color_arr[i] = (Color*) malloc(sizeof(double) * image->cols);
-        if (color_arr[i] == NULL) {
-            printf("Memory allocation failed.");
-            exit(-1);
-        }
-    }
-
-    for (int i = 0; i < image->rows; i++) {
-        for (int j = 0; j < image->cols; j++) {
-            Color *color;
-            color = evaluateOneCell(image, i, j, rule);
-            color_arr[i][j].R = color->R;
-            color_arr[i][j].G = color->G;
-            color_arr[i][j].B = color->B;
-
-            free(color);
-        }
-    }
+    new_image->rows = image->rows;
+    new_image->cols = image->cols;
     
+    Color **color_arr = (Color**) malloc(sizeof(Color*) * new_image->rows * new_image->cols);
+
+    if (color_arr == NULL) {
+        printf("Memory allocation failed.\n");
+        free(new_image);
+        freeImage(image);
+        exit(-1);
+    }
+
+    for (uint32_t i = 0; i < new_image->rows; i++) {
+        for (uint32_t j = 0; j < new_image->cols; j++) {
+            *(color_arr + i * image->cols + j) = evaluateOneCell(image, i, j, rule);
+        }
+    }
+
     new_image->image = color_arr;
-
-    freeImage(image);
-
     return new_image;
 }
 
@@ -172,7 +166,7 @@ int main(int argc, char **argv) {
     Image *image;
 
     if (argc != 3) {
-        printf("Incorrect number of arguments");
+        printf("Incorrect number of arguments.\n");
         exit(-1);
     }
 
@@ -182,9 +176,10 @@ int main(int argc, char **argv) {
     rule = strtol(argv[2], &str, 16);
     
     image = readData(filename);
-    image = life(image, rule);
-    writeData(image);
+    Image *new_image = life(image, rule);
     freeImage(image);
+    writeData(new_image);
+    freeImage(new_image);
 
     return 0;
 }
