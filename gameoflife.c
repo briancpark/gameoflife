@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
     Image *image;
 
     if (argc != 3) {
-        printf("Incorrect number of arguments.\n");
+        printf("usage: ./gameOfLife filename rule\nfilename is an ASCII PPM file (type P3) with maximum value 255.\nrule is a hex number beginning with 0x; Life is 0x1808.\n");
         exit(-1);
     }
 
