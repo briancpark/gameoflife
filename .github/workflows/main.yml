@@ -23,5 +23,3 @@ jobs:
           make imageloader
           make steganography
           make gameoflife
-          alias oracleOfLife="./gameOfLife"
-          bash fsociety.sh
