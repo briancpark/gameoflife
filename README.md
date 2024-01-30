@@ -1,4 +1,5 @@
 # [Game of Life](https://cs61c.org/fa20/projects/proj1/)
+
 Brian Park
 
 John Conway recently [passed away](https://www.nytimes.com/2020/04/15/technology/john-horton-conway-dead-coronavirus.html) from the coronavirus, and this project exercises one of his greatest contributions, [The Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) which we will implement in C!
@@ -12,40 +13,49 @@ John Conway recently [passed away](https://www.nytimes.com/2020/04/15/technology
 *Glider Guns in Conway's Game of Life*
 
 ## File I/O
+
 For this project, we had to handle with `.ppm` files. To make sure the file is correctly parsed and information is correctly formatted, read, and written into `.ppm` files. We also format it into a easily workable data structure in C, where we can do bitwise operations and such with the individual pixel values! The structures used are `Color` and `Image` type where we store each color's (R, G, B) intensity value as a `uint8_t` type. Then we store the colors into a 2d row-major array inside of the `Image` struct. This is all handled in the helper code `imageloader.c`.
 
 ### Usage
+
 We can test out the correctness of the file parsing through these commands.
 
 This will run the imageloader and check that the program correctly parses and executes:
-```
-$ make imageloader
+
+```sh
+make imageloader
 ```
 
 This will run a Valgrind memory leak test, to make sure no memory is leaked during the program execution:
-```
-$ make imagememcheck
+
+```sh
+make imagememcheck
 ```
 
 ## Steganography
+
 ![image](https://img.wonderhowto.com/img/81/56/63576362239080/0/hacks-mr-robot-hide-data-audio-files.1280x600.jpg)
 
 We've seen Elliot Alderson use DeepSound to secretly hide away all the information of the people he has hacked into CD albums. We will do the same here with `.ppm` images! By subtracting the values of the original `.ppm` file with the hidden message `.ppm` file, we can crack the secret message! It's much like public and private key encryption, where we must have a reference original image to crack the code. The code that helps us crack the secret message is in `stegaonography.c`. I use bitwise operations to write a new black and white image of the secret message. I make the pixel white if the least significant bit is 1 and black if it is 0. This will effectively give us an image that has black handwritten secret message on a white background!
 
 Compiling and executing the code to crack the secret message can be done so by running:
-```
-$ make steganography
+
+```sh
+make steganography
 ```
 
 This will run a Valgrind memory leak test, to make sure no memory is leaked during the program execution:
-```
-$ make steganographymemcheck
+
+```sh
+make steganographymemcheck
 ```
 
 ## The Game of Life
+
 Now to the fun part of this project. We will now implement John Conway's Game of Life! The `steganography.c` was just a warmup of how to manipute the pixels. Now we extend this idea of bit manipulation further with black and white images, as well as colored images! The code is in `gameoflife.c`. 
 
 ### The Rules
+
 In order to understand what is going on in the code, we must first understand the rules of the Game of Life.
 
 1. Any live cell with two or three live neighbours (in the surrounding 8 cells) survives to the next generation.
@@ -76,39 +86,46 @@ There are many other rules that follow other than the hexadecimal rule `0x1808`:
 | 0x6948 | Morley | Named after Stephen Morley; also called Move. Supports very high-period and slow spaceships. |
 | 0x3D1D0 | Anneal | Also called the twisted majority rule. Symmetric under on-off reversal. Approximates the curve-shortening flow on the boundaries between live and dead cells. |
 
-
 This will compile the `./gameoflife` executable:
-```
-$ make gameoflife
+
+```sh
+make gameoflife
 ```
 
 This will compile and run Valgrind to ensure there are no memory leaks in the code:
-```
-$ make gameoflifememcheck
+
+```sh
+make gameoflifememcheck
 ```
 
 This will run the Game of Life on a `.ppm` image with a rule set in hexadecimal:
-```
-$ ./gameOfLife [file] [rule]
+
+```sh
+./gameOfLife [file] [rule]
 ```
 
 As a reference solution, the reference solution was availaible on the intructional servers as an executable, so I was able to `diff` check on all possible dimensions and sizes for correctness with this command:
-```
-$ oracleOfLife [filename] [rule]
+
+```sh
+oracleOfLife [filename] [rule]
 ```
 
 To automate this process, I created a `bash` script. It is named `fsociety.sh`, because programming in C through SSH made me feel like a hacker. Of course, this script doesn't work anymore now that the semester is over.
-```
-$ ./fsociety.sh
+
+```sh
+./fsociety.sh
 ```
 
 Finally, we can make the animation by compiling the frames together into a `.gif`! This is conveninetly done for us in a shell script file by executing:
+
+```sh
+./frames.csh GliderGuns 0x1808 100
 ```
-$ ./frames.csh GliderGuns 0x1808 100
-```
+
 This will run and produce indivual frames of the Game of Life on an image. For example, we create `100` frames in this example, with the rule set to `0x1808`! We store this into the directory `GliderGuns/`.
 
 ## Conclusion
+
 Hooray! We have created some cool graphical visualizations in C by going low level and doing bitwise operations on each individual pixels. The big idea that bits can represent anything, such as color, integers, memory addresses, etc were all exercised here!
 
 *[There ain't no such thing as free lunch.](https://en.wikipedia.org/wiki/There_ain%27t_no_such_thing_as_a_free_lunch)*
