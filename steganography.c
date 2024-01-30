@@ -13,15 +13,16 @@
 **
 **************************************************************************/
 
+#include "imageloader.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
-#include "imageloader.h"
 
-//Determines what color the cell at the given row/col should be. This should not affect Image, and should allocate space for a new Color.
-Color *evaluateOnePixel(Image *image, int row, int col) {
-    Color **img = image->image;
-    Color *color = *(img + row * image->cols + col);
+// Determines what color the cell at the given row/col should be. This should not affect Image, and
+// should allocate space for a new Color.
+Color* evaluateOnePixel(Image* image, int row, int col) {
+    Color** img = image->image;
+    Color* color = *(img + row * image->cols + col);
 
     if (color->B & 1) {
         color->R = 255;
@@ -36,9 +37,9 @@ Color *evaluateOnePixel(Image *image, int row, int col) {
     return color;
 }
 
-//Given an image, creates a new image extracting the LSB of the B channel.
-Image *steganography(Image *image) {
-    Color **img = image->image;
+// Given an image, creates a new image extracting the LSB of the B channel.
+Image* steganography(Image* image) {
+    Color** img = image->image;
     for (int i = 0; i < image->rows; i++) {
         for (int j = 0; j < image->cols; j++) {
             *(img + i * image->cols + j) = evaluateOnePixel(image, i, j);
@@ -48,29 +49,29 @@ Image *steganography(Image *image) {
 }
 
 /*
-Loads a file of ppm P3 format from a file, and prints to stdout (e.g. with printf) a new image, 
-where each pixel is black if the LSB of the B channel is 0, 
+Loads a file of ppm P3 format from a file, and prints to stdout (e.g. with printf) a new image,
+where each pixel is black if the LSB of the B channel is 0,
 and white if the LSB of the B channel is 1.
 
 argc stores the number of arguments.
 argv stores a list of arguments. Here is the expected input:
 argv[0] will store the name of the program (this happens automatically).
-argv[1] should contain a filename, containing a file of ppm P3 format (not necessarily with .ppm file extension).
-If the input is not correct, a malloc fails, or any other error occurs, you should exit with code -1.
-Otherwise, you should return from main with code 0.
-Make sure to free all memory before returning!
+argv[1] should contain a filename, containing a file of ppm P3 format (not necessarily with .ppm
+file extension). If the input is not correct, a malloc fails, or any other error occurs, you should
+exit with code -1. Otherwise, you should return from main with code 0. Make sure to free all memory
+before returning!
 */
-int main(int argc, char **argv) {
-    
-    Image *image;
-    
+int main(int argc, char** argv) {
+
+    Image* image;
+
     if (argc != 2) {
         printf("usage: %s filename\n", argv[0]);
         printf("filename is an ASCII PPM file (type P3) with maximum value 255.\n");
         exit(-1);
     }
-    
-    char *filename = argv[1];
+
+    char* filename = argv[1];
     image = readData(filename);
     image = steganography(image);
     writeData(image);
