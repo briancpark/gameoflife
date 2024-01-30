@@ -14,27 +14,27 @@
 **
 **************************************************************************/
 
+#include "imageloader.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
 #include <string.h>
-#include "imageloader.h"
 
-//Opens a .ppm P3 image file, and constructs an Image object. 
-//You may find the function fscanf useful.
-//Make sure that you close the file with fclose before returning.
-Image *readData(char *filename) {
-    FILE *fp = fopen(filename, "r");
-    
-    //Do a file pointer null check here
+// Opens a .ppm P3 image file, and constructs an Image object.
+// You may find the function fscanf useful.
+// Make sure that you close the file with fclose before returning.
+Image* readData(char* filename) {
+    FILE* fp = fopen(filename, "r");
+
+    // Do a file pointer null check here
     if (fp == NULL) {
         printf("File doesn't exist. Exit with code -1.\n");
         exit(-1);
     }
 
-    Image *img;
-    img = (Image*) malloc(sizeof(struct Image));  
-    
+    Image* img;
+    img = (Image*)malloc(sizeof(struct Image));
+
     if (img == NULL) {
         fclose(fp);
         printf("Memory allocation failed.\n");
@@ -47,7 +47,7 @@ Image *readData(char *filename) {
     fscanf(fp, "%u %u", &img->cols, &img->rows);
     fscanf(fp, "%*d");
 
-    Color **color_arr = (Color**) malloc(sizeof(Color*) * img->rows * img->cols);
+    Color** color_arr = (Color**)malloc(sizeof(Color*) * img->rows * img->cols);
     if (color_arr == NULL) {
         free(img);
         fclose(fp);
@@ -57,7 +57,7 @@ Image *readData(char *filename) {
 
     for (uint32_t i = 0; i < img->rows; i++) {
         for (uint32_t j = 0; j < img->cols; j++) {
-            Color *color = malloc(sizeof(Color));
+            Color* color = malloc(sizeof(Color));
             if (color == NULL) {
                 free(img);
                 free(color_arr);
@@ -75,34 +75,34 @@ Image *readData(char *filename) {
     return img;
 }
 
-//Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
-void writeData(Image *image) {
+// Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
+void writeData(Image* image) {
     printf("P3\n");
     printf("%hhu %hhu\n", image->cols, image->rows);
     printf("255\n");
 
-    Color **img = image->image;
+    Color** img = image->image;
 
     for (uint32_t i = 0; i < image->rows; i++) {
         for (uint32_t j = 0; j < image->cols; j++) {
-            Color *color = *(img + i * image->cols + j);
+            Color* color = *(img + i * image->cols + j);
             printf("%3hhu %3hhu %3hhu", color->R, color->G, color->B);
             if (j < image->cols - 1) {
                 printf("   ");
             }
         }
         printf("\n");
-    }    
+    }
 }
 
-//Frees an image
-void freeImage(Image *image) {
+// Frees an image
+void freeImage(Image* image) {
     for (uint32_t i = 0; i < image->rows; i++) {
         for (uint32_t j = 0; j < image->cols; j++) {
-            Color *color = *(image->image + i * image->cols + j);
+            Color* color = *(image->image + i * image->cols + j);
             free(color);
         }
     }
     free(image->image);
-    free(image);   
+    free(image);
 }
