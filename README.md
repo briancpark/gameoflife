@@ -34,10 +34,6 @@ make imagememcheck
 
 ## Steganography
 
-![image](https://img.wonderhowto.com/img/81/56/63576362239080/0/hacks-mr-robot-hide-data-audio-files.1280x600.jpg)
-
-We've seen Elliot Alderson use DeepSound to secretly hide away all the information of the people he has hacked into CD albums. We will do the same here with `.ppm` images! By subtracting the values of the original `.ppm` file with the hidden message `.ppm` file, we can crack the secret message! It's much like public and private key encryption, where we must have a reference original image to crack the code. The code that helps us crack the secret message is in `stegaonography.c`. I use bitwise operations to write a new black and white image of the secret message. I make the pixel white if the least significant bit is 1 and black if it is 0. This will effectively give us an image that has black handwritten secret message on a white background!
-
 Compiling and executing the code to crack the secret message can be done so by running:
 
 ```sh
@@ -110,10 +106,10 @@ As a reference solution, the reference solution was availaible on the intruction
 oracleOfLife [filename] [rule]
 ```
 
-To automate this process, I created a `bash` script. It is named `fsociety.sh`, because programming in C through SSH made me feel like a hacker. Of course, this script doesn't work anymore now that the semester is over.
+To automate this process, I created a `bash` script. It is named `test.sh`, because programming in C through SSH made me feel like a hacker. Of course, this script doesn't work anymore now that the semester is over.
 
 ```sh
-./fsociety.sh
+./test.sh
 ```
 
 Finally, we can make the animation by compiling the frames together into a `.gif`! This is conveninetly done for us in a shell script file by executing:
@@ -123,9 +119,3 @@ Finally, we can make the animation by compiling the frames together into a `.gif
 ```
 
 This will run and produce indivual frames of the Game of Life on an image. For example, we create `100` frames in this example, with the rule set to `0x1808`! We store this into the directory `GliderGuns/`.
-
-## Conclusion
-
-Hooray! We have created some cool graphical visualizations in C by going low level and doing bitwise operations on each individual pixels. The big idea that bits can represent anything, such as color, integers, memory addresses, etc were all exercised here!
-
-*[There ain't no such thing as free lunch.](https://en.wikipedia.org/wiki/There_ain%27t_no_such_thing_as_a_free_lunch)*
