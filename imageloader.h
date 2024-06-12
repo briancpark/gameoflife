@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Color {
-    uint8_t R;
-    uint8_t G;
-    uint8_t B;
+typedef union Color {
+    uint8_t values[3]; // 0: R, 1: G, 2: B
+    struct {
+        uint8_t R;
+        uint8_t G;
+        uint8_t B;
+    };
 } Color;
 typedef struct Image {
     Color** image;
