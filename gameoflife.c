@@ -18,12 +18,9 @@
 #include <stdlib.h>
 
 // My custom modulo function
-int mod(int n, int m) {
-    if (n < 0) {
-        return n + m;
-    } else {
-        return n % m;
-    }
+static inline int mod(int n, int m) {
+    int result = n % m;
+    return result < 0 ? result + m : result;
 }
 
 // Determines what color the cell at the given row/col should be. This function allocates space for
@@ -31,148 +28,54 @@ int mod(int n, int m) {
 // grid "wraps", so we treat the top row as adjacent to the bottom row and the left column as
 // adjacent to the right column.
 Color* evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
-
     Color** img = image->image;
-    Color* new_color = (Color*)malloc(sizeof(struct Color));
 
+    uint32_t alive = rule >> 9;
+    uint32_t dead = rule & 511;
+
+    int rows = image->rows;
+    int cols = image->cols;
+
+    // Allocate and initialize new_color
+    Color* new_color = (Color*)calloc(0, sizeof(Color));
     if (new_color == NULL) {
         printf("Memory allocation failed.\n");
         exit(-1);
     }
 
-    new_color->R = 0;
-    new_color->G = 0;
-    new_color->B = 0;
+    // Precompute neighbor positions
+    int neighbor_rows[8] = {mod(row - 1, rows),
+                            mod(row, rows),
+                            mod(row + 1, rows),
+                            mod(row - 1, rows),
+                            /* Current Pixel */ mod(row + 1, rows),
+                            mod(row - 1, rows),
+                            mod(row, rows),
+                            mod(row + 1, rows)};
+    int neighbor_cols[8] = {mod(col - 1, cols),
+                            mod(col - 1, cols),
+                            mod(col - 1, cols),
+                            mod(col, cols),
+                            /* Current Pixel */ mod(col, cols),
+                            mod(col + 1, cols),
+                            mod(col + 1, cols),
+                            mod(col + 1, cols)};
 
-    uint32_t alive = rule >> 9;
-    uint32_t dead = rule & 511;
+    for (int i = 0; i < 8; i++) {
+#pragma unroll
+        for (int channel = 0; channel < 3; channel++) {
+            int neighbors = 0;
+#pragma unroll 8
+            for (int n = 0; n < 8; n++) {
+                neighbors +=
+                    ((img[neighbor_rows[n] * cols + neighbor_cols[n]]->values[channel] >> i) & 1);
+            }
 
-    for (int i = 7; i >= 0; i--) {
-        int neighbors = 0;
-
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1, image->cols)))->R >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->R >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->R >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->R >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->R >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->R >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->R >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->R >>
-             i) &
-            1;
-
-        if ((((*(img + row * image->cols + col))->R >> i) & 1) == 1 &&
-            ((alive >> neighbors) & 1) == 1) {
-            new_color->R = new_color->R | (1 << i);
-        }
-
-        if ((((*(img + row * image->cols + col))->R >> i) & 1) == 0 &&
-            ((dead >> neighbors) & 1) == 1) {
-            new_color->R = new_color->R | (1 << i);
-        }
-    }
-
-    for (int i = 7; i >= 0; i--) {
-        int neighbors = 0;
-
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1, image->cols)))->G >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->G >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->G >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->G >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->G >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->G >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->G >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->G >>
-             i) &
-            1;
-
-        if ((((*(img + row * image->cols + col))->G >> i) & 1) == 1 &&
-            ((alive >> neighbors) & 1) == 1) {
-            new_color->G = new_color->G | (1 << i);
-        }
-
-        if ((((*(img + row * image->cols + col))->G >> i) & 1) == 0 &&
-            ((dead >> neighbors) & 1) == 1) {
-            new_color->G = new_color->G | (1 << i);
-        }
-    }
-
-    for (int i = 7; i >= 0; i--) {
-        int neighbors = 0;
-
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col - 1, image->cols)))->B >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col - 1, image->cols)))->B >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col - 1, image->cols)))->B >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col, image->cols)))->B >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col, image->cols)))->B >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row - 1, image->rows) * image->cols + mod(col + 1, image->cols)))->B >>
-             i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row, image->rows) * image->cols + mod(col + 1, image->cols)))->B >> i) &
-            1;
-        neighbors +=
-            ((*(img + mod(row + 1, image->rows) * image->cols + mod(col + 1, image->cols)))->B >>
-             i) &
-            1;
-
-        if ((((*(img + row * image->cols + col))->B >> i) & 1) == 1 &&
-            ((alive >> neighbors) & 1) == 1) {
-            new_color->B = new_color->B | (1 << i);
-        }
-
-        if ((((*(img + row * image->cols + col))->B >> i) & 1) == 0 &&
-            ((dead >> neighbors) & 1) == 1) {
-            new_color->B = new_color->B | (1 << i);
+            int current_bit = (img[row * cols + col]->values[channel] >> i) & 1;
+            if (((current_bit == 1 && (alive >> neighbors) & 1) ||
+                 (current_bit == 0 && (dead >> neighbors) & 1))) {
+                new_color->values[channel] |= (1 << i);
+            }
         }
     }
 
