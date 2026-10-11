@@ -2,7 +2,8 @@ CC = gcc
 ifeq ($(shell uname -s),Darwin)
 # Apple clang: OpenMP comes from Homebrew's libomp (brew install libomp); built without it otherwise
 ARCHFLAGS = -mcpu=native
-LIBOMP := $(shell brew --prefix libomp 2>/dev/null)
+# brew may not be on PATH (e.g. non-interactive ssh), so also try the default prefixes
+LIBOMP := $(firstword $(shell brew --prefix libomp 2>/dev/null) $(wildcard /opt/homebrew/opt/libomp /usr/local/opt/libomp))
 ifneq ($(wildcard $(LIBOMP)/include/omp.h),)
 OMPFLAGS = -Xpreprocessor -fopenmp -I$(LIBOMP)/include
 OMPLIBS = -L$(LIBOMP)/lib -lomp
@@ -12,8 +13,8 @@ ARCHFLAGS = -march=native
 OMPFLAGS = -fopenmp
 OMPLIBS = -fopenmp
 endif
-CFLAGS = -g -Wall -std=c99 -c -Ofast $(ARCHFLAGS) $(OMPFLAGS)
-LDFLAGS = -g -Wall -Ofast $(ARCHFLAGS) $(OMPLIBS)
+CFLAGS = -g -Wall -std=c99 -c -O3 $(ARCHFLAGS) $(OMPFLAGS)
+LDFLAGS = -g -Wall -O3 $(ARCHFLAGS) $(OMPLIBS)
 VGFLAGS = --tool=memcheck --leak-check=full --dsymutil=yes --track-origins=yes
 
 all: PartA PartB
