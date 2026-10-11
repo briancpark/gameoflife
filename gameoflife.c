@@ -16,6 +16,9 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __AVX512F__
+#include <immintrin.h>
+#endif
 
 // My custom modulo function
 static inline int mod(int n, int m) {
@@ -37,7 +40,7 @@ Color* evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
     int cols = image->cols;
 
     // Allocate and initialize new_color
-    Color* new_color = (Color*)calloc(0, sizeof(Color));
+    Color* new_color = (Color*)calloc(1, sizeof(Color));
     if (new_color == NULL) {
         printf("Memory allocation failed.\n");
         exit(-1);
@@ -82,37 +85,158 @@ Color* evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
     return new_color;
 }
 
+// Fast path: each pixel's 24 bits (R, G, B x 8 bit-planes) are 24 independent Life boards, so we
+// pack a pixel into one uint32_t and compute all 24 boards at once with bit-sliced adders. Bit k of
+// every intermediate word belongs to board k. With AVX-512, 16 pixels are processed per vector.
+
+// 2-way mux on every bit: s ? a : b
+#define MUX(s, a, b) (((s) & (a)) | (~(s) & (b)))
+
+// Applies a 9-bit birth/survival mask to the bit-sliced neighbor count (c3 c2 c1 c0). Count 8 is
+// the only value with c3 set, so the low 8 bits form a 3-input LUT on (c2, c1, c0).
+static inline uint32_t applyMask(uint32_t mask, uint32_t c3, uint32_t c2, uint32_t c1,
+                                 uint32_t c0) {
+    uint32_t m[9];
+    for (int n = 0; n < 9; n++) {
+        m[n] = ((mask >> n) & 1) ? ~0u : 0u;
+    }
+    uint32_t lo = MUX(c2, MUX(c1, MUX(c0, m[7], m[6]), MUX(c0, m[5], m[4])),
+                      MUX(c1, MUX(c0, m[3], m[2]), MUX(c0, m[1], m[0])));
+    return MUX(c3, m[8], lo);
+}
+
+// Scalar version of the bit-sliced step, used for the row tail and for non-AVX-512 builds.
+static inline uint32_t stepWord(const uint32_t* up, const uint32_t* mid, const uint32_t* down,
+                                uint32_t alive, uint32_t dead) {
+    uint32_t a = up[0], b = up[1], c = up[2], d = mid[0], e = mid[2], f = down[0], g = down[1],
+             h = down[2], cur = mid[1];
+
+    // Carry-save adder tree summing 8 one-bit inputs per lane into a 4-bit count.
+    uint32_t s1 = a ^ b ^ c, k1 = (a & b) | (c & (a ^ b));
+    uint32_t s2 = f ^ g ^ h, k2 = (f & g) | (h & (f ^ g));
+    uint32_t s3 = d ^ e, k3 = d & e;
+    uint32_t c0 = s1 ^ s2 ^ s3, t1 = (s1 & s2) | (s3 & (s1 ^ s2));
+    uint32_t u1 = k1 ^ k2 ^ k3, u2 = (k1 & k2) | (k3 & (k1 ^ k2));
+    uint32_t c1 = t1 ^ u1, w = t1 & u1;
+    uint32_t c2 = u2 ^ w, c3 = u2 & w;
+
+    return MUX(cur, applyMask(alive, c3, c2, c1, c0), applyMask(dead, c3, c2, c1, c0));
+}
+
+#ifdef __AVX512F__
+// MUX via vpternlogd: imm 0xCA computes A ? B : C.
+#define VMUX(s, a, b)  _mm512_ternarylogic_epi32((s), (a), (b), 0xCA)
+#define VXOR3(a, b, c) _mm512_ternarylogic_epi32((a), (b), (c), 0x96)
+#define VMAJ(a, b, c)  _mm512_ternarylogic_epi32((a), (b), (c), 0xE8)
+
+static inline __m512i applyMaskVec(const __m512i* m, __m512i c3, __m512i c2, __m512i c1,
+                                   __m512i c0) {
+    __m512i lo = VMUX(c2, VMUX(c1, VMUX(c0, m[7], m[6]), VMUX(c0, m[5], m[4])),
+                      VMUX(c1, VMUX(c0, m[3], m[2]), VMUX(c0, m[1], m[0])));
+    return VMUX(c3, m[8], lo);
+}
+
+static inline __m512i stepVec(const uint32_t* up, const uint32_t* mid, const uint32_t* down,
+                              const __m512i* ma, const __m512i* md) {
+    __m512i a = _mm512_loadu_si512(up), b = _mm512_loadu_si512(up + 1),
+            c = _mm512_loadu_si512(up + 2);
+    __m512i d = _mm512_loadu_si512(mid), cur = _mm512_loadu_si512(mid + 1),
+            e = _mm512_loadu_si512(mid + 2);
+    __m512i f = _mm512_loadu_si512(down), g = _mm512_loadu_si512(down + 1),
+            h = _mm512_loadu_si512(down + 2);
+
+    __m512i s1 = VXOR3(a, b, c), k1 = VMAJ(a, b, c);
+    __m512i s2 = VXOR3(f, g, h), k2 = VMAJ(f, g, h);
+    __m512i s3 = _mm512_xor_si512(d, e), k3 = _mm512_and_si512(d, e);
+    __m512i c0 = VXOR3(s1, s2, s3), t1 = VMAJ(s1, s2, s3);
+    __m512i u1 = VXOR3(k1, k2, k3), u2 = VMAJ(k1, k2, k3);
+    __m512i c1 = _mm512_xor_si512(t1, u1), w = _mm512_and_si512(t1, u1);
+    __m512i c2 = _mm512_xor_si512(u2, w), c3 = _mm512_and_si512(u2, w);
+
+    return VMUX(cur, applyMaskVec(ma, c3, c2, c1, c0), applyMaskVec(md, c3, c2, c1, c0));
+}
+#endif
+
 // The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
 // You should be able to copy most of this from steganography.c
 Image* life(Image* image, uint32_t rule) {
+    uint32_t rows = image->rows;
+    uint32_t cols = image->cols;
+    uint32_t alive = rule >> 9;
+    uint32_t dead = rule & 511;
 
-    Image* new_image;
-    new_image = (Image*)malloc(sizeof(struct Image));
+    Image* new_image = (Image*)malloc(sizeof(struct Image));
+    // Packed grid with one wrapped column on each side, and a packed output buffer.
+    size_t stride = (size_t)cols + 2;
+    uint32_t* grid = (uint32_t*)malloc(sizeof(uint32_t) * stride * rows);
+    uint32_t* out = (uint32_t*)malloc(sizeof(uint32_t) * (size_t)cols * rows);
+    Color** color_arr = (Color**)malloc(sizeof(Color*) * (size_t)rows * cols);
+    Color* colors = (Color*)malloc(sizeof(Color) * (size_t)rows * cols);
 
-    if (new_image == NULL) {
-        printf("Memory allocation failed.\n");
-        freeImage(image);
-        exit(-1);
-    }
-
-    new_image->rows = image->rows;
-    new_image->cols = image->cols;
-
-    Color** color_arr = (Color**)malloc(sizeof(Color*) * new_image->rows * new_image->cols);
-
-    if (color_arr == NULL) {
+    if (new_image == NULL || grid == NULL || out == NULL || color_arr == NULL || colors == NULL) {
         printf("Memory allocation failed.\n");
         free(new_image);
+        free(grid);
+        free(out);
+        free(color_arr);
+        free(colors);
         freeImage(image);
         exit(-1);
     }
 
-    for (uint32_t i = 0; i < new_image->rows; i++) {
-        for (uint32_t j = 0; j < new_image->cols; j++) {
-            *(color_arr + i * image->cols + j) = evaluateOneCell(image, i, j, rule);
+    new_image->rows = rows;
+    new_image->cols = cols;
+
+#pragma omp parallel
+    {
+#pragma omp for schedule(static)
+        for (uint32_t i = 0; i < rows; i++) {
+            Color** src = image->image + (size_t)i * cols;
+            uint32_t* dst = grid + i * stride;
+            for (uint32_t j = 0; j < cols; j++) {
+                dst[j + 1] = src[j]->R | (uint32_t)src[j]->G << 8 | (uint32_t)src[j]->B << 16;
+            }
+            dst[0] = dst[cols];
+            dst[cols + 1] = dst[1];
+        }
+
+#ifdef __AVX512F__
+        __m512i ma[9], md[9];
+        for (int n = 0; n < 9; n++) {
+            ma[n] = _mm512_set1_epi32(((alive >> n) & 1) ? -1 : 0);
+            md[n] = _mm512_set1_epi32(((dead >> n) & 1) ? -1 : 0);
+        }
+#endif
+
+#pragma omp for schedule(static)
+        for (uint32_t i = 0; i < rows; i++) {
+            const uint32_t* up = grid + (size_t)(i == 0 ? rows - 1 : i - 1) * stride;
+            const uint32_t* mid = grid + (size_t)i * stride;
+            const uint32_t* down = grid + (size_t)(i == rows - 1 ? 0 : i + 1) * stride;
+            uint32_t* dst = out + (size_t)i * cols;
+            uint32_t j = 0;
+#ifdef __AVX512F__
+            for (; j + 16 <= cols; j += 16) {
+                _mm512_storeu_si512(dst + j, stepVec(up + j, mid + j, down + j, ma, md));
+            }
+#endif
+            for (; j < cols; j++) {
+                dst[j] = stepWord(up + j, mid + j, down + j, alive, dead);
+            }
+        }
+
+#pragma omp for schedule(static)
+        for (size_t p = 0; p < (size_t)rows * cols; p++) {
+            Color* color = colors + p;
+            color->R = out[p];
+            color->G = out[p] >> 8;
+            color->B = out[p] >> 16;
+            color_arr[p] = color;
         }
     }
 
+    free(grid);
+    free(out);
     new_image->image = color_arr;
     return new_image;
 }

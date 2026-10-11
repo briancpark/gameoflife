@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -Wall -std=c99 -c -Ofast -march=native
-LDFLAGS = -g -Wall -Ofast -march=native
+CFLAGS = -g -Wall -std=c99 -c -Ofast -march=native -fopenmp
+LDFLAGS = -g -Wall -Ofast -march=native -fopenmp
 VGFLAGS = --tool=memcheck --leak-check=full --dsymutil=yes --track-origins=yes
 
 all: PartA PartB
