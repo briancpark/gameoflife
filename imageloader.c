@@ -55,19 +55,20 @@ Image* readData(char* filename) {
         exit(-1);
     }
 
-    for (uint32_t i = 0; i < img->rows; i++) {
-        for (uint32_t j = 0; j < img->cols; j++) {
-            Color* color = malloc(sizeof(Color));
-            if (color == NULL) {
-                free(img);
-                free(color_arr);
-                fclose(fp);
-                printf("Memory allocation failed.\n");
-                exit(-1);
-            }
-            fscanf(fp, "%hhu %hhu %hhu", &color->R, &color->G, &color->B);
-            *(color_arr + i * img->cols + j) = color;
-        }
+    // All pixels live in one contiguous block; color_arr[0] is its base (see freeImage).
+    Color* colors = (Color*)malloc(sizeof(Color) * img->rows * img->cols);
+    if (colors == NULL) {
+        free(img);
+        free(color_arr);
+        fclose(fp);
+        printf("Memory allocation failed.\n");
+        exit(-1);
+    }
+
+    for (uint32_t i = 0; i < img->rows * img->cols; i++) {
+        Color* color = colors + i;
+        fscanf(fp, "%hhu %hhu %hhu", &color->R, &color->G, &color->B);
+        *(color_arr + i) = color;
     }
 
     fclose(fp);
@@ -78,7 +79,7 @@ Image* readData(char* filename) {
 // Given an image, prints to stdout (e.g. with printf) a .ppm P3 file with the image's data.
 void writeData(Image* image) {
     printf("P3\n");
-    printf("%hhu %hhu\n", image->cols, image->rows);
+    printf("%u %u\n", image->cols, image->rows);
     printf("255\n");
 
     Color** img = image->image;
@@ -97,12 +98,7 @@ void writeData(Image* image) {
 
 // Frees an image
 void freeImage(Image* image) {
-    for (uint32_t i = 0; i < image->rows; i++) {
-        for (uint32_t j = 0; j < image->cols; j++) {
-            Color* color = *(image->image + i * image->cols + j);
-            free(color);
-        }
-    }
+    free(image->image[0]);
     free(image->image);
     free(image);
 }
