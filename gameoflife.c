@@ -16,8 +16,10 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __AVX512F__
+#if defined(__AVX512F__)
 #include <immintrin.h>
+#elif defined(__ARM_NEON)
+#include <arm_neon.h>
 #endif
 
 // My custom modulo function
@@ -87,7 +89,7 @@ Color* evaluateOneCell(Image* image, int row, int col, uint32_t rule) {
 
 // Fast path: each pixel's 24 bits (R, G, B x 8 bit-planes) are 24 independent Life boards, so we
 // pack a pixel into one uint32_t and compute all 24 boards at once with bit-sliced adders. Bit k of
-// every intermediate word belongs to board k. With AVX-512, 16 pixels are processed per vector.
+// every intermediate word belongs to board k. Vectors process 16 (AVX-512) or 4 (NEON) pixels.
 
 // 2-way mux on every bit: s ? a : b
 #define MUX(s, a, b) (((s) & (a)) | (~(s) & (b)))
@@ -123,35 +125,61 @@ static inline uint32_t stepWord(const uint32_t* up, const uint32_t* mid, const u
     return MUX(cur, applyMask(alive, c3, c2, c1, c0), applyMask(dead, c3, c2, c1, c0));
 }
 
-#ifdef __AVX512F__
-// MUX via vpternlogd: imm 0xCA computes A ? B : C.
+// Vector backends. Each provides a register type holding LANES packed pixels, plus loads, stores
+// and the bitwise primitives used by the kernel: VMUX(s, a, b) = s ? a : b per bit,
+// VXOR3 = 3-way xor (full-adder sum), VMAJ = majority (full-adder carry).
+#if defined(__AVX512F__)
+#define HAVE_VEC 1
+#define LANES    16
+typedef __m512i vec;
+#define VLOAD(p)     _mm512_loadu_si512(p)
+#define VSTORE(p, v) _mm512_storeu_si512((p), (v))
+#define VSET1(x)     _mm512_set1_epi32((int)(x))
+#define VXOR(a, b)   _mm512_xor_si512((a), (b))
+#define VAND(a, b)   _mm512_and_si512((a), (b))
+// vpternlogd truth tables: 0xCA = A ? B : C, 0x96 = A ^ B ^ C, 0xE8 = majority.
 #define VMUX(s, a, b)  _mm512_ternarylogic_epi32((s), (a), (b), 0xCA)
 #define VXOR3(a, b, c) _mm512_ternarylogic_epi32((a), (b), (c), 0x96)
 #define VMAJ(a, b, c)  _mm512_ternarylogic_epi32((a), (b), (c), 0xE8)
+#elif defined(__ARM_NEON)
+#define HAVE_VEC      1
+#define LANES         4
+typedef uint32x4_t vec;
+#define VLOAD(p)      vld1q_u32(p)
+#define VSTORE(p, v)  vst1q_u32((p), (v))
+#define VSET1(x)      vdupq_n_u32(x)
+#define VXOR(a, b)    veorq_u32((a), (b))
+#define VAND(a, b)    vandq_u32((a), (b))
+#define VMUX(s, a, b) vbslq_u32((s), (a), (b))
+#ifdef __ARM_FEATURE_SHA3
+#define VXOR3(a, b, c) veor3q_u32((a), (b), (c))
+#else
+#define VXOR3(a, b, c) veorq_u32(veorq_u32((a), (b)), (c))
+#endif
+// Majority: where a and b differ, c decides; otherwise a (== b) does.
+#define VMAJ(a, b, c) vbslq_u32(veorq_u32((a), (b)), (c), (a))
+#endif
 
-static inline __m512i applyMaskVec(const __m512i* m, __m512i c3, __m512i c2, __m512i c1,
-                                   __m512i c0) {
-    __m512i lo = VMUX(c2, VMUX(c1, VMUX(c0, m[7], m[6]), VMUX(c0, m[5], m[4])),
-                      VMUX(c1, VMUX(c0, m[3], m[2]), VMUX(c0, m[1], m[0])));
+#ifdef HAVE_VEC
+static inline vec applyMaskVec(const vec* m, vec c3, vec c2, vec c1, vec c0) {
+    vec lo = VMUX(c2, VMUX(c1, VMUX(c0, m[7], m[6]), VMUX(c0, m[5], m[4])),
+                  VMUX(c1, VMUX(c0, m[3], m[2]), VMUX(c0, m[1], m[0])));
     return VMUX(c3, m[8], lo);
 }
 
-static inline __m512i stepVec(const uint32_t* up, const uint32_t* mid, const uint32_t* down,
-                              const __m512i* ma, const __m512i* md) {
-    __m512i a = _mm512_loadu_si512(up), b = _mm512_loadu_si512(up + 1),
-            c = _mm512_loadu_si512(up + 2);
-    __m512i d = _mm512_loadu_si512(mid), cur = _mm512_loadu_si512(mid + 1),
-            e = _mm512_loadu_si512(mid + 2);
-    __m512i f = _mm512_loadu_si512(down), g = _mm512_loadu_si512(down + 1),
-            h = _mm512_loadu_si512(down + 2);
+static inline vec stepVec(const uint32_t* up, const uint32_t* mid, const uint32_t* down,
+                          const vec* ma, const vec* md) {
+    vec a = VLOAD(up), b = VLOAD(up + 1), c = VLOAD(up + 2);
+    vec d = VLOAD(mid), cur = VLOAD(mid + 1), e = VLOAD(mid + 2);
+    vec f = VLOAD(down), g = VLOAD(down + 1), h = VLOAD(down + 2);
 
-    __m512i s1 = VXOR3(a, b, c), k1 = VMAJ(a, b, c);
-    __m512i s2 = VXOR3(f, g, h), k2 = VMAJ(f, g, h);
-    __m512i s3 = _mm512_xor_si512(d, e), k3 = _mm512_and_si512(d, e);
-    __m512i c0 = VXOR3(s1, s2, s3), t1 = VMAJ(s1, s2, s3);
-    __m512i u1 = VXOR3(k1, k2, k3), u2 = VMAJ(k1, k2, k3);
-    __m512i c1 = _mm512_xor_si512(t1, u1), w = _mm512_and_si512(t1, u1);
-    __m512i c2 = _mm512_xor_si512(u2, w), c3 = _mm512_and_si512(u2, w);
+    vec s1 = VXOR3(a, b, c), k1 = VMAJ(a, b, c);
+    vec s2 = VXOR3(f, g, h), k2 = VMAJ(f, g, h);
+    vec s3 = VXOR(d, e), k3 = VAND(d, e);
+    vec c0 = VXOR3(s1, s2, s3), t1 = VMAJ(s1, s2, s3);
+    vec u1 = VXOR3(k1, k2, k3), u2 = VMAJ(k1, k2, k3);
+    vec c1 = VXOR(t1, u1), w = VAND(t1, u1);
+    vec c2 = VXOR(u2, w), c3 = VAND(u2, w);
 
     return VMUX(cur, applyMaskVec(ma, c3, c2, c1, c0), applyMaskVec(md, c3, c2, c1, c0));
 }
@@ -200,11 +228,11 @@ Image* life(Image* image, uint32_t rule) {
             dst[cols + 1] = dst[1];
         }
 
-#ifdef __AVX512F__
-        __m512i ma[9], md[9];
+#ifdef HAVE_VEC
+        vec ma[9], md[9];
         for (int n = 0; n < 9; n++) {
-            ma[n] = _mm512_set1_epi32(((alive >> n) & 1) ? -1 : 0);
-            md[n] = _mm512_set1_epi32(((dead >> n) & 1) ? -1 : 0);
+            ma[n] = VSET1(((alive >> n) & 1) ? ~0u : 0u);
+            md[n] = VSET1(((dead >> n) & 1) ? ~0u : 0u);
         }
 #endif
 
@@ -215,9 +243,9 @@ Image* life(Image* image, uint32_t rule) {
             const uint32_t* down = grid + (size_t)(i == rows - 1 ? 0 : i + 1) * stride;
             uint32_t* dst = out + (size_t)i * cols;
             uint32_t j = 0;
-#ifdef __AVX512F__
-            for (; j + 16 <= cols; j += 16) {
-                _mm512_storeu_si512(dst + j, stepVec(up + j, mid + j, down + j, ma, md));
+#ifdef HAVE_VEC
+            for (; j + LANES <= cols; j += LANES) {
+                VSTORE(dst + j, stepVec(up + j, mid + j, down + j, ma, md));
             }
 #endif
             for (; j < cols; j++) {
